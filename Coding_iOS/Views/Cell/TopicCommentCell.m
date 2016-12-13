@@ -15,6 +15,7 @@
 
 #import "MJPhotoBrowser.h"
 #import "Coding_NetAPIManager.h"
+#import "HtmlMediaViewController.h"
 
 @interface TopicCommentCell ()<UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout>
 @property (strong, nonatomic) UIImageView *ownerIconView;
@@ -22,6 +23,8 @@
 @property (strong, nonatomic) UIButton *voteBtn, *voteBtnBig;
 @property (strong, nonatomic) UILabel *timeLabel;
 @property (strong, nonatomic) UICustomCollectionView *imageCollectionView;
+@property (strong, nonatomic) UIButton *detailBtn;
+
 @end
 
 @implementation TopicCommentCell
@@ -99,8 +102,25 @@
                 [self.contentView addSubview:self.imageCollectionView];
             }
         }
+        if (!_detailBtn) {
+            _detailBtn = [UIButton buttonWithTitle:@"查看详情" titleColor:kColorBrandGreen];
+            _detailBtn.titleLabel.font = [UIFont systemFontOfSize:12];
+            [_detailBtn addTarget:self action:@selector(goToDetail) forControlEvents:UIControlEventTouchUpInside];
+            [self.contentView addSubview:_detailBtn];
+            [_detailBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+                make.size.mas_equalTo(CGSizeMake(60, 30));
+                make.right.equalTo(self.contentView).offset(-10);
+                make.centerY.equalTo(_timeLabel);
+            }];
+        }
+        _timeLabel.lineBreakMode = NSLineBreakByTruncatingMiddle;
     }
     return self;
+}
+
+- (void)goToDetail{
+    HtmlMediaViewController *vc = [HtmlMediaViewController instanceWithHtmlMedia:self.toComment.htmlMedia title:[NSString stringWithFormat:@"%@ 的评论", self.toComment.owner.name]];
+    [BaseViewController goToVC:vc];
 }
 
 - (void)voteBtnClicked{
@@ -124,6 +144,7 @@
     if (!_toComment) {
         return;
     }
+    _detailBtn.hidden = ![self.toComment.htmlMedia needToShowDetail];
     CGFloat curBottomY = 15;
     CGFloat curWidth = kScreen_Width - 40 - 2*kPaddingLeftWidth;
     
@@ -158,6 +179,7 @@
     curBottomY += [TopicCommentCell imageCollectionViewHeightWithCount:imagesCount];
     
     [_timeLabel setY:curBottomY];
+    _timeLabel.width = _detailBtn.hidden? kScreen_Width - 40 - 2*kPaddingLeftWidth: kScreen_Width - 40 - 2*kPaddingLeftWidth - 60;
     _timeLabel.text = [NSString stringWithFormat:@"%@ 发布于 %@", _toComment.owner.name, [_toComment.created_at stringDisplay_HHmm]];
 }
 

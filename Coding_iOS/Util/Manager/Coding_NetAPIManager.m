@@ -871,8 +871,13 @@
         if (data) {
             id resultData = [data valueForKeyPath:@"data"];
             ProjectFolders *proFolders = [NSObject objectOfClass:@"ProjectFolders" fromJSON:resultData];
-            ProjectFolder *defaultFolder = [ProjectFolder defaultFolder];
-            [proFolders.list insertObject:defaultFolder atIndex:0];
+            {//默认文件夹
+                ProjectFolder *defaultFolder = [ProjectFolder defaultFolder];
+                ProjectFolder *shareFolder = [ProjectFolder shareFolder];
+                [proFolders.list insertObject:defaultFolder atIndex:0];
+                [proFolders.list insertObject:shareFolder atIndex:0];
+            }
+            //补全 project_id
             for (ProjectFolder *folder in proFolders.list) {
                 folder.project_id = project.id;
                 for (ProjectFolder *sub_folder in folder.sub_folders) {
@@ -884,11 +889,14 @@
                     [MobClick event:kUmeng_Event_Request_Get label:@"文件夹列表"];
                    
                     //每个文件夹内的文件数量
-                    NSArray *countArray = [countData valueForKey:@"data"];
+                    countData = countData[@"data"];
+                    NSArray *countArray = [countData valueForKey:@"folders"];
                     NSMutableDictionary *countDict = [[NSMutableDictionary alloc] initWithCapacity:countArray.count];
                     for (NSDictionary *item in countArray) {
                         [countDict setObject:[item objectForKey:@"count"] forKey:[item objectForKey:@"folder"]];
                     }
+                    countDict[@(-1)] = countData[@"shareCount"];//shareFolder 特殊处理下
+                    
                     for (ProjectFolder *folder in proFolders.list) {
                         folder.count = [countDict objectForKey:folder.file_id];
                         for (ProjectFolder *sub_folder in folder.sub_folders) {
@@ -971,6 +979,18 @@
             [MobClick event:kUmeng_Event_Request_ActionOfServer label:@"文件_移动"];
 
             block(fileIdList, nil);
+        }else{
+            block(nil, error);
+        }
+    }];
+}
+- (void)request_MoveFolder:(NSNumber *)folderId toFolder:(ProjectFolder *)folder inProject:(Project *)project andBlock:(void (^)(id data, NSError *error))block{
+    NSString *path = [NSString stringWithFormat:@"api/user/%@/project/%@/folder/%@/move-to/%@", project.owner_user_name, project.name, folderId, folder.file_id];    
+    [[CodingNetAPIClient sharedJsonClient] requestJsonDataWithPath:path withParams:nil withMethodType:Put andBlock:^(id data, NSError *error) {
+        if (data) {
+            [MobClick event:kUmeng_Event_Request_ActionOfServer label:@"文件夹_移动"];
+            
+            block(folderId, nil);
         }else{
             block(nil, error);
         }

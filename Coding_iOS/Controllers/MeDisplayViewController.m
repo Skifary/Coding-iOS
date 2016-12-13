@@ -125,11 +125,15 @@
         [weakSelf.view endLoading];
         [weakSelf.myTableView.infiniteScrollingView stopAnimating];
         if (data) {
-            [weakSelf.dataList addObjectsFromArray:data[@"list"]];
+            if (weakSelf.willLoadMore) {
+                [weakSelf.dataList addObjectsFromArray:data[@"list"]];
+            }else{
+                weakSelf.dataList = data[@"list"]? [data[@"list"] mutableCopy]: @[].mutableCopy;
+            }
             [weakSelf.myTableView reloadData];
             weakSelf.myTableView.showsInfiniteScrolling = hasMoreData;
         }
-        [weakSelf.view configBlankPage:EaseBlankPageTypeMyJoinedTopic hasData:weakSelf.dataList.count > 0 hasError:error != nil reloadButtonBlock:^(id sender) {
+        [weakSelf.view configBlankPage:EaseBlankPageTypeMyJoinedTopic hasData:weakSelf.dataList.count > 0 hasError:error != nil offsetY:[_eaV originalHeight] + 60 reloadButtonBlock:^(id sender) {
             [weakSelf refresh];
         }];
 
